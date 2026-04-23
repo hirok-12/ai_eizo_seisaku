@@ -77,21 +77,38 @@ async function main() {
   console.error(`Source image: ${imagePath}`);
   console.error(`Generating video (${duration}s, ${resolution}, ${aspectRatio})...`);
 
-  // Start video generation
-  let operation = await ai.models.generateVideos({
-    model: "veo-3.1-lite-generate-preview",
-    prompt: values.prompt,
-    image: {
-      imageBytes: imageData.toString("base64"),
-      mimeType,
-    },
-    config: {
-      aspectRatio,
-      durationSeconds: parseInt(duration),
-      resolution,
-      personGeneration: "allow_all",
-    },
-  });
+  // Start video generation (with rate limit retry)
+  const MAX_RETRIES = 5;
+  const RETRY_BASE_SECONDS = 60;
+  let operation;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      operation = await ai.models.generateVideos({
+        model: "veo-3.1-lite-generate-preview",
+        prompt: values.prompt,
+        image: {
+          imageBytes: imageData.toString("base64"),
+          mimeType,
+        },
+        config: {
+          aspectRatio,
+          durationSeconds: parseInt(duration),
+          resolution,
+          personGeneration: "allow_adult",
+        },
+      });
+      break;
+    } catch (err: any) {
+      const status = err?.status ?? err?.httpStatusCode ?? err?.code;
+      if (status === 429 && attempt < MAX_RETRIES) {
+        const wait = RETRY_BASE_SECONDS * (attempt + 1);
+        console.error(`Rate limited (429). Retrying in ${wait}s... (${attempt + 1}/${MAX_RETRIES})`);
+        await new Promise((r) => setTimeout(r, wait * 1000));
+        continue;
+      }
+      throw err;
+    }
+  }
 
   // Poll until done
   const startTime = Date.now();

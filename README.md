@@ -23,33 +23,34 @@ npm install
 `.env` ファイルをプロジェクトルートに作成:
 
 ```
-GEMINI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-Gemini API キーは [Google AI Studio](https://aistudio.google.com/apikey) から取得できる。
+- OpenAI API キーは [OpenAI Platform](https://platform.openai.com/api-keys) から取得できる（画像生成用）
+- Gemini API キーは [Google AI Studio](https://aistudio.google.com/apikey) から取得できる（動画生成用）
 
 ## 使用API・料金
 
-### 画像生成: Gemini Nano Banana 2
+### 画像生成: GPT Image 2
 
-- モデル: `gemini-3.1-flash-image-preview`
-- 無料枠: なし（有料のみ）
+- モデル: `gpt-image-2`
 
-| 解像度 | 1枚あたりの料金 |
-|--------|----------------|
-| 512px (0.5K) | $0.045 |
-| 1024px (1K) | $0.067 |
-| 2048px (2K) | $0.101 |
-| 4096px (4K) | $0.151 |
-
-バッチ処理利用時は50%割引が適用される。
+| 品質 | サイズ | 1枚あたりの料金 |
+|------|--------|----------------|
+| low | 1024x1024 | $0.011 |
+| low | 1024x1536 / 1536x1024 | $0.016 |
+| medium | 1024x1024 | $0.035 |
+| medium | 1024x1536 / 1536x1024 | $0.053 |
+| high | 1024x1024 | $0.067 |
+| high | 1024x1536 / 1536x1024 | $0.100 |
 
 ```bash
 npx tsx --env-file .env scripts/generate-image.ts \
   --prompt "プロンプト" \
   --output output.png \
-  --aspect-ratio 9:16 \
-  --size 1K \
+  --size 1024x1536 \
+  --quality medium \
   --reference reference.png
 ```
 
@@ -59,12 +60,12 @@ npx tsx --env-file .env scripts/generate-image.ts \
 - 無料枠: なし（有料のみ）
 - 生成時間: 1クリップあたり約1〜6分
 
-| 解像度 | 1秒あたりの料金 | 4秒クリップ | 8秒クリップ |
-|--------|----------------|------------|------------|
-| 720p | $0.05 | $0.20 | $0.40 |
-| 1080p | $0.08 | - | $0.64 |
+| 解像度 | 1秒あたりの料金 | 4秒クリップ | 6秒クリップ | 8秒クリップ |
+|--------|----------------|------------|------------|------------|
+| 720p | $0.05 | $0.20 | $0.30 | $0.40 |
+| 1080p | $0.08 | - | - | $0.64 |
 
-※ 1080pは8秒固定。4K は非対応。
+※ 1080pは8秒固定。720pは4/6/8秒から選択可。4K は非対応。
 
 ```bash
 npx tsx --env-file .env scripts/generate-video.ts \
@@ -82,7 +83,7 @@ npx tsx --env-file .env scripts/generate-video.ts \
 
 | 工程 | 計算 | コスト |
 |------|------|--------|
-| 画像生成 (1K) | 10枚 x $0.067 | $0.67 |
+| 画像生成 (medium, 1024x1536) | 10枚 x $0.053 | $0.53 |
 | 動画生成 (720p, 8秒) | 10本 x $0.40 | $4.00 |
 | リテイク (想定2〜3回) | - | $1〜2 |
 | **合計** | | **約 $5〜7** |
