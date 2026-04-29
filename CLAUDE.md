@@ -37,30 +37,56 @@ CMを制作する際は、必ず以下の順序で進める。前工程の成果
 - 動画生成プロンプト（`video-generation`）でも `Japanese` を再度明記（Veo がフレーム再生成時に外国人化するリスク回避）
 - Character Anchor 文にも上記要素を盛り込む
 
-### エンドカードはキャッチコピー焼き込み必須
+### エンドカードは2層構造（情緒コピー + 商品識別情報）必須
 
-CMの最終カット（エンドカード）には必ずキャッチコピーを入れる。後工程テロップ合成より、`asset-generation` の画像生成段階でコピーを焼き込むのが第一選択肢:
+CMの最終カット（エンドカード）は **「情緒メインコピー（上層）」＋「商品識別情報（下層）」の2層構造** を必須とする。情緒コピー単独だと「何の商品か」が伝わらず、ブランディング目的でも購買想起を欠く。
 
-- `concept-design` フェーズで メインコピー + 予備2〜3案を必ず定義
-- `asset-generation` で GPT Image 2 を `quality=high` で使い、コピー日本語原文をプロンプトに直接埋め込む（`preserve text exactly as specified` を明示）
+- `concept-design` フェーズで以下を必ず定義:
+  - メインコピー（情緒）+ 予備2〜3案
+  - 商品名（日本語+英語）、ブランドロゴ方針、必要に応じてカテゴリ・タグライン・CTA
+- `asset-generation` で GPT Image 2 を `quality=high` で使い、3層レイアウト（上層: 情緒コピー / 中層: パッケージ・ロゴ / 下層: 商品名）を一体生成
+- 日本語原文をプロンプトに直接埋め込み、`preserve text exactly as specified` を明示
 - `video-generation` で Veo に `preserve all text and logos exactly, no deformation` を指定し、焼き込み画像のテキスト崩壊を防ぐ
 - 後工程 `video-editing` でのテロップ合成は、焼き込みが崩れた場合のフォールバック位置づけ
 
-GPT Image 2 は2026年時点で日本語17文字程度（ひらがな・カタカナ・漢字混在）まで実用描画可能。商品ロゴも同様に画像生成段階で焼き込む。
+GPT Image 2 は2026年時点で日本語17文字程度（ひらがな・カタカナ・漢字混在）まで実用描画可能。
+
+### 音響設計はコンセプト段階で必ず定義
+
+完成動画は **BGM/SE/ナレーションを統合した状態で書き出す**ことを原則とする。無音マスター提供は禁止（cupnoodle v1 で「BGMがないと感情がのらない」というフィードバックを反映）。
+
+- `concept-design` で以下を必ず定義:
+  - BGM の方向性（ジャンル / BPM / 楽器構成 / 感情曲線）
+  - SE レイヤー（カット横断で必要な環境音）
+  - ナレーション要否（動画完結→なし / 親世代訴求や感動系→あり / ハイブリッド）
+- `storyboard` の各カット記述に BGM・SE・ナレーション欄を必須化
+- `video-editing` で BGM トラック付きマスターを標準書き出し、最終ラウドネスを **-14 LUFS** に正規化
+
+#### 音声生成スクリプト
+
+| 用途 | スクリプト | モデル | 料金 |
+|------|----------|--------|------|
+| BGM 生成 | `scripts/generate-bgm.ts` | MiniMax Music 2.5 (fal.ai) | $0.035/生成 |
+| ナレーション生成 | `scripts/generate-narration.ts` | OpenAI gpt-4o-mini-tts | 約$0.015/分 |
 
 ## プロジェクト構造
 
 ```
 output/
 └── {番号}.{プロジェクト名}/
-    ├── concept.md        # コンセプトシート
+    ├── concept.md        # コンセプトシート（音響設計・エンドカード設計含む）
     ├── storyboard.md     # ストーリーボード
     ├── prompts.md        # 画像生成プロンプト
     ├── video-prompts.md  # 動画生成プロンプト
     ├── editing.md        # 編集指示書
-    ├── edit.sh           # ffmpegスクリプト（任意）
+    ├── edit.sh           # ffmpegスクリプト
     ├── images/
     │   └── scene_{N}/    # カットごとの静止画
-    └── videos/
-        └── scene_{N}/    # カットごとの動画
+    ├── videos/
+    │   └── scene_{N}/    # カットごとの動画
+    ├── audio/
+    │   ├── bgm.mp3       # BGM
+    │   ├── narration_C{N}.mp3  # ナレーション（あり時のみ）
+    │   └── sfx/          # SE素材（任意）
+    └── {project}_final.mp4  # 完成版マスター（BGM/SE/ナレ統合済み）
 ```

@@ -190,27 +190,53 @@ npx tsx --env-file .env scripts/generate-image.ts \
   --reference {プロジェクト}/images/scene_3/C7-1.png
 ```
 
-#### ロゴエンドカットの生成
+#### エンドカードの生成（2層構造必須）
 
-CMの最終カット（エンドカード）は、**ロゴ・ブランド名・キャッチコピーを含めた完成画像をAI生成する**。白背景にテキストをオーバーレイする方式ではなく、ブランドロゴ・商品名・キャッチコピー・背景を一体としてAI画像で生成する。
+CMの最終カット（エンドカード）は、**「情緒メインコピー（上層）」＋「商品識別情報（下層）」の2層構造**をAI画像で一体生成する。情緒コピー単独だと「何の商品か」が伝わらない。`storyboard.md` のエンドカット記述を忠実に反映すること。
 
-**必ず含める要素:**
-1. 商品のパッケージ（正面が明確に見えるブランドショット）
-2. 商品ロゴ / ブランド名（例: NISSIN / CUP NOODLE / カップヌードル）
-3. **キャッチコピー**（concept.md で定義されたメインコピー）
-4. CM全体のトーンと整合する背景
+**必ず含める要素（3層構成）:**
+
+| 層 | 内容 | 例 |
+|----|------|------|
+| 上層 | 情緒メインコピー（concept.md 定義） | 「お母さんの言葉の温度は、3分でやってくる」 |
+| 中層 | 商品パッケージ + ブランドロゴ | NISSIN / CUP NOODLE / カップヌードル |
+| 下層 | 商品識別情報 | 「日清カップヌードル / Nissin Cup Noodle」、必要に応じてタグライン・CTA |
+
+**プロンプトテンプレート（推奨形式）:**
+
+```
+Cinematic product end card, vertical 9:16 composition, 3-tier layout:
+
+UPPER TIER (top of frame): Japanese emotional copy text in two lines:
+  Line 1: {メインコピー前半}
+  Line 2: {メインコピー後半}
+  Style: {elegant sans-serif / handwritten / serif} white typography, {size}, {position}.
+
+MIDDLE TIER (center of frame): {商品パッケージの詳細描写}, with all branding preserved exactly (CUP NOODLE wordmark, NISSIN branding, カップヌードル band, gold decorative patterns must be authentically rendered).
+
+LOWER TIER (bottom of frame): Product identification text:
+  Line A: 日清カップヌードル
+  Line B: Nissin Cup Noodle
+  Style: small clean sans-serif white text, centered.
+
+Background: {dark cool gradient / warm fade / brand color}.
+All Japanese characters must be accurately rendered. Preserve all text and logos exactly as specified, no deformation.
+```
 
 **プロンプト設計のポイント:**
-- **キャッチコピー本文を英語プロンプト内に Japanese 原文のまま埋め込む**（例: `Japanese copy text displayed: お母さんの言葉の温度は、3分でやってくる`）
-- 長いコピーは 2〜3 行に改行を明示（例: `Line one: お母さんの言葉の温度は、 / Line two: 3分でやってくる`）
-- 文字の位置・サイズ・フォントを指示（例: `elegant sans-serif white typography in the lower third of the frame`）
-- 各文字の正確な再現を強調（例: `all Japanese characters must be accurately rendered, the characters 母 言葉 温度 must be correctly formed, preserve text exactly as specified`）
-- 商品ロゴも同様に「正確に描画」を明示（例: `preserve CUP NOODLE wordmark, NISSIN branding and カップヌードル band exactly as in the authentic product design`）
-- quality は **high 推奨**（low/medium だと日本語文字が崩れるリスクが高い）
+- **メインコピー本文を Japanese 原文のままプロンプトに埋め込む**
+- 長いコピーは 2〜3 行に改行を明示
+- 各層の位置を明確に指示（UPPER / MIDDLE / LOWER）
+- 文字の正確な再現を強調（`preserve text exactly as specified`、`all Japanese characters must be accurately rendered`、`no deformation`）
+- 商品ロゴも同様に「正確に描画」を明示（`preserve CUP NOODLE wordmark, NISSIN branding and カップヌードル band exactly as in the authentic product design`）
+- quality は **high 必須**（low/medium だと日本語文字が崩れるリスクが高い）
 - 商品パッケージの参考画像があれば `--reference` で渡す
+- 商品名（日本語+英語）は2行に分けて明記し、視認性を確保
 
 **GPT Image 2 の日本語描画性能（2026年以降）:**
 6〜20文字程度の日本語（ひらがな・カタカナ・漢字）は実用水準で描画可能。ただし quality=high で生成し、必ず人間が目視確認する。崩れた場合は再生成して採用バリエーション（`-2`, `-3`）を作る。
+
+**識別情報を欠いたエンドカードは廃案にする**。情緒コピー単独・パッケージ単独のエンドは認めない（cupnoodle v1 で発覚した問題、`docs/workflow_improvements.md` 参照）。
 
 #### 生成サイクル
 
